@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Data Upload</title>
+</head>
+
+<body>
+    <div>
+        <h1>Location Data Upload</h1>
+        <form id="uploadForm">
+            <label for="appName">Application Name:</label>
+            <input type="text" id="appName" name="appName" required><br>
+            <label for="timestamp">Timestamp:</label>
+            <input type="datetime-local" id="timestamp" name="timestamp" required><br>
+            <label for="unixTimestamp">Unix Timestamp:</label>
+            <input type="text" id="unixTimestamp" name="unixTimestamp" readonly><br>
+            <!-- Read-only field to display Unix timestamp -->
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required><br>
+            <label for="sessionToken">Session Token:</label>
+            <input type="text" id="sessionToken" name="sessionToken" required><br>
+            <label for="locationData">Location Data:</label>
+            <textarea id="locationData" name="locationData" rows="4" required></textarea><br>
+            <button type="submit">Upload Location Data</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.js"></script>
+
+    <script>
+        const web3 = new Web3('http://localhost:8572'); // Replace with your local node URL
+
+        const contractAddress = '0x5df365eee73d9a49ddbaa51b180b18f765f73567'; // Replace with your contract address
+        const contractABI = [
+                {
+                    "inputs": [
+                        {
+                            "internalType": "string",
+                            "name": "_appName",
+                            "type": "string"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "_timestamp",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "_username",
+                            "type": "string"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "_data",
+                            "type": "string"
+                        }
+                    ],
+                    "name": "uploadData",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "string",
+                            "name": "_appName",
+                            "type": "string"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "_timestamp",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "_username",
+                            "type": "string"
+                        }
+                    ],
+                    "name": "returnData",
+                    "outputs": [
+                        {
+                            "internalType": "string",
+                            "name": "",
+                            "type": "string"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                }
+            ];
+
+        const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+        document.getElementById('timestamp').addEventListener('change', (event) => {
+            const selectedDate = new Date(event.target.value);
+            const unixTimestamp = Math.floor(selectedDate.getTime() / 1000); // Convert milliseconds to seconds
+            document.getElementById('unixTimestamp').value = unixTimestamp;
+        });
+
+        document.getElementById('uploadForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const appName = document.getElementById('appName').value;
+            const timestamp = parseInt(document.getElementById('unixTimestamp').value); // Get Unix timestamp from input field
+            const username = document.getElementById('username').value;
+            const sessionToken = document.getElementById('sessionToken').value;
+            const locationData = document.getElementById('locationData').value;
+
+            // Encrypt the location data with AES encryption using the session token as the key
+            const encryptedLocationData = CryptoJS.AES.encrypt(locationData, sessionToken).toString();
+
+            try {
+                // Upload the encrypted location data to the smart contract
+                await contract.methods.uploadData(appName, timestamp, username, encryptedLocationData).send({ from: '0x28cdc30b9bdb86fe470c86e96d9966b09f3e951a' }); // Replace with your sender address
+                alert('Location data uploaded successfully!');
+                document.getElementById('uploadForm').reset();
+            } catch (error) {
+                console.error('Error uploading location data:', error);
+                alert('Error uploading location data. Please try again.');
+            }
+        });
+    </script>
+</body>
+
+</html>

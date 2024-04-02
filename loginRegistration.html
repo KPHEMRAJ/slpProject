@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Login/Registration</title>
+</head>
+
+<body>
+    <div class="container">
+        <h1>App Registration/Login</h1>
+    
+        <div id="registrationSection">
+            <h2>Registration</h2>
+            <div>
+                <label for="newAppNameInput">App Name:</label> <!-- Updated label -->
+                <input type="text" id="newAppNameInput"> <!-- Updated input id -->
+            </div>
+    
+            <div>
+                <label for="newPassphraseInput">Passphrase:</label>
+                <input type="password" id="newPassphraseInput">
+            </div>
+    
+            <button id="registerButton">Register</button>
+        </div>
+    
+        <!-- Login Section -->
+        <div id="loginSection">
+            <h2>Login</h2>
+            <div>
+                <label for="appNameInput">App Name:</label>
+                <input type="text" id="appNameInput">
+                <button id="checkAccountButton">Check Account</button>
+            </div>
+    
+            <div>
+                <label for="loginAddressInput">Address:</label>
+                <input type="text" id="loginAddressInput">
+            </div>
+    
+            <div>
+                <label for="loginPassphraseInput">Passphrase:</label>
+                <input type="password" id="loginPassphraseInput">
+            </div>
+    
+            <button id="loginButton">Login</button>
+        </div>
+    
+        <div id="result"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+    <script>
+        const web3 = new Web3('http://localhost:8572'); // Replace with your local node URL
+
+        const contractAddress = '0x98c67f428029b3f07c2021642e1fea356e467c01'; // Replace with your contract address
+        const contractABI = [
+                {
+                    "inputs": [
+                        {
+                            "internalType": "string",
+                            "name": "_name",
+                            "type": "string"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "_address",
+                            "type": "address"
+                        }
+                    ],
+                    "name": "setAccount",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "string",
+                            "name": "_name",
+                            "type": "string"
+                        }
+                    ],
+                    "name": "getAddress",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "",
+                            "type": "address"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_address",
+                            "type": "address"
+                        }
+                    ],
+                    "name": "getName",
+                    "outputs": [
+                        {
+                            "internalType": "string",
+                            "name": "",
+                            "type": "string"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                }
+            ]
+
+        const contract = new web3.eth.Contract(contractABI, contractAddress);
+    // Function to check if an account exists for the given app name
+    document.getElementById('checkAccountButton').addEventListener('click', async () => {
+        const appName = document.getElementById('appNameInput').value;
+
+        try {
+            const address = await contract.methods.getAddress(appName).call();
+            if (address !== '0x0000000000000000000000000000000000000000') {
+                document.getElementById('loginAddressInput').value = address;
+            } else {
+                alert('No account found for this app. Please register first.');
+            }
+        } catch (error) {
+            console.error('Error checking account:', error);
+            alert('Error checking account. Please try again.');
+        }
+    });
+    // Function to authenticate user login by unlocking the account
+        async function authenticateUser(address, passphrase) {
+            try {
+                await web3.eth.personal.unlockAccount(address, passphrase, 600); // Unlock the account for 10 minutes (600 seconds)
+                return true; // Authentication successful
+            } catch (error) {
+                console.error('Error unlocking account:', error);
+                throw new Error('Incorrect address or passphrase. Please check your username and password.'); // Throw error with specific message
+            }
+        }
+
+        document.getElementById('loginButton').addEventListener('click', async () => {
+            const loginAddress = document.getElementById('loginAddressInput').value;
+            const loginPassphrase = document.getElementById('loginPassphraseInput').value;
+            try {
+                // Add authentication logic here
+                // If authentication is successful, navigate to the retrieval page
+                 if (await authenticateUser(loginAddress, loginPassphrase)) { // Await the result of authenticateUser
+                    try {
+                        const appName = await contract.methods.getName(loginAddress).call();
+                        document.getElementById('result').textContent = `Welcome, ${appName}!`;
+                        window.location.href = `data-retrieval.html?appName=${appName}`;
+                    } catch (error) {
+                        console.error('Error getting account:', error);
+                        document.getElementById('result').textContent = 'Error: Unable to get account.';
+                    }
+                } else {
+                    document.getElementById('result').textContent = 'Invalid address or passphrase.';
+                }
+                
+            } catch (error) {
+                console.error('Error authenticating user:', error);
+                document.getElementById('result').textContent = 'Invalid app name or passphrase.';
+            }
+        });
+
+       // Function to handle register button click event
+        document.getElementById('registerButton').addEventListener('click', async () => {
+            try {
+                const newAppName = document.getElementById('newAppNameInput').value; // Updated input id
+                const newPassphrase = document.getElementById('newPassphraseInput').value;
+                const newAccount = await web3.eth.personal.newAccount(newPassphrase);
+
+                try {
+                    // Call the contract's setAccount function to register the new account
+                    await contract.methods.setAccount(newAppName, newAccount).send({ from: '0x28cdc30b9bdb86fe470c86e96d9966b09f3e951a' }); // Update with your address
+
+                    // Display success message
+                    document.getElementById('result').textContent = `New account created with address: ${newAccount} and name: ${newAppName}`; // Updated variable name
+
+                    // Update account list after registration (if needed)
+                    //await fetchAccounts();
+                } catch (error) {
+                    // If the setAccount call fails (e.g., name already exists), display error message
+                    console.error('Error setting account:', error);
+                    document.getElementById('result').textContent = 'Error: Unable to set account. Please try a different app name.'; // Updated message
+                }
+            } catch (error) {
+                // If an error occurs during account creation, display error message
+                console.error('Error creating new account:', error);
+                document.getElementById('result').textContent = 'Error: Unable to create new account.';
+            }
+        });
+
+    </script>
+</body>
+
+</html>

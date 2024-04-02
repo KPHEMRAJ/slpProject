@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Retrieval</title>
+</head>
+
+<body>
+    <div>
+        <h1 id="heading">Location Retrieval</h1>
+        <form id="retrieveForm">
+            <label for="timestamp">Unix Timestamp:</label>
+            <input type="number" id="timestamp" name="timestamp" required><br>
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required><br>
+            <label for="sessionToken">Session Token:</label>
+            <input type="text" id="sessionToken" name="sessionToken" required><br>
+            <button type="submit">Retrieve Location Data</button>
+        </form>
+        <div id="dataDisplay"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+    <script>
+        const web3 = new Web3('http://localhost:8572'); // Replace with your local node URL
+
+        const contractAddress = '0x5df365eee73d9a49ddbaa51b180b18f765f73567'; // Replace with your contract address
+        const contractABI = [
+                {
+                    "inputs": [
+                        {
+                            "internalType": "string",
+                            "name": "_appName",
+                            "type": "string"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "_timestamp",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "_username",
+                            "type": "string"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "_data",
+                            "type": "string"
+                        }
+                    ],
+                    "name": "uploadData",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "string",
+                            "name": "_appName",
+                            "type": "string"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "_timestamp",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "_username",
+                            "type": "string"
+                        }
+                    ],
+                    "name": "returnData",
+                    "outputs": [
+                        {
+                            "internalType": "string",
+                            "name": "",
+                            "type": "string"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                }
+            ];
+
+        const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+        // Get the app name from the query parameter in the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const appName = urlParams.get('appName');
+        document.getElementById('heading').textContent = `Location Retrieval for ${appName} App`;
+
+        document.getElementById('retrieveForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const timestamp = document.getElementById('timestamp').value;
+            const username = document.getElementById('username').value;
+            const sessionToken = document.getElementById('sessionToken').value;
+
+            try {
+                const encryptedData = await contract.methods.returnData(appName, timestamp, username).call();
+                const decryptedData = decryptData(encryptedData, sessionToken);
+                document.getElementById('dataDisplay').textContent = `Retrieved Data: ${decryptedData}`;
+            } catch (error) {
+                console.error('Error retrieving data:', error);
+                document.getElementById('dataDisplay').textContent = 'Error: Unable to retrieve location data.';
+            }
+        });
+
+        function decryptData(encryptedData, sessionToken) {
+            const decryptedBytes = CryptoJS.AES.decrypt(encryptedData, sessionToken);
+            const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
+            return decryptedText;
+        }
+    </script>
+</body>
+
+</html>
