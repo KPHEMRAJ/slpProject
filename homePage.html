@@ -7,9 +7,66 @@
     <title>Homepage</title>
 </head>
 
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-image: url(./backgroundimage.jpg);
+        background-size: cover;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+
+    div {
+        text-align: center;
+        background-color:transparent;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        height: 200px;
+       font-size: 25px;
+    }
+
+    h1 {
+        color: #ffffff;
+        background-color: black;
+        padding: 10px;
+        border-radius: 5%;
+        animation: fadeInOut 5s ease-in-out infinite alternate; 
+        }
+
+    button {
+        background-color: #0b0b0b;
+        color: #fff;
+        border: none;
+        padding: 15px 30px;
+        margin: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        font-weight: bolder;
+    }
+
+    button:hover {
+        background-color: #0056b3;
+    }
+
+    @keyframes fadeInOut {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+</style>
+
 <body>
     <div>
-        <h1>Welcome to the Homepage</h1>
+        <h1>Source Location Privacy</h1>
         <button onclick="goToLoginRegistration()">Login / Registration</button>
         <button onclick="goToUploadData()">Upload Data</button>
     </div>
